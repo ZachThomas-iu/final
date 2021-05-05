@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Zach Thomas Final</title>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js" charset="utf-8"></script>
+    <style>
+
+		/* Style the text and axis. */
+    	text { 
+			font-family: 'Times New Roman', Times, serif; 
+			font-size: 13px;
+		}
+		.axis path, .axis line {
+			fill: none;
+			stroke: black;
+			shape-rendering: crispEdges;
+		}
+
+		/* This is the text of every little "tick" on the charts. */
+		.tick text {
+			fill: black;
+			font-size: 11px;
+		}
+
+		/* Style the rectangle */
+		rect {
+			stroke: white;
+		}
+	</style>
+</head>
+
+<body>
+
+    <svg width="600" height="400" style="background: beige;">
+
+        <g id="scatterplot" transform="translate(100, 60)">
+
+            <text transform="translate(100, -25)">Top 50 Games by Copies Sold</text>
+			<text transform="translate(100, -10)">Click a point and its details will appear below</text>
+        </g>
+
+		<g id="chartLegend" transform="translate(800, 60)">
+			
+				<li style="font-weight: bold;">Each color represents a different publisher</li>
+				<li>Red = Nintendo (22 Games)</li>
+				<li>Orange = Activision (5 Games)</li>
+				<li>Blue = Sony Computer Entertainment (2 Games)</li>
+				<li>Green = Xbox Game Studios (1 Game)</li>
+				<li>Purple = Other Publishers (20 Games)</li>
+			
+
+		<g>
+
+			<ol type="1">
+				<li id="gametitle"> Title: </li>
+				<li id="gamesales"> Total Sales: </li>
+				<li id="gameplatform"> Platform: </li>
+				<li id="gamedate"> Release Date: </li>
+				<li id="gamedeveloper"> Developer: </li>
+				<li id="gamepublisher"> Publisher: </li>
+			</ol>
+
+		</g>
+
+		<g id="selectlist">
+		</g>
+
+
+    </svg>    
+
+    <script>
+
+		function fixNum(str) {
+			return parseFloat(str.replace(/,/g, ''))
+		}
+
+        //Store the games into this array
+        var games = [];
+
+		//Create a selection list that allows people to pick game 1. 
+		function gameList()
+		{
+			var chooseGameText = d3.select("#selectlist");
+			choosegameText.append("text").html("Pick game 1");
+
+			var chooseGame = d3.select("#selectlist").append("select").attr("name", "selectGame");
+
+			var options = chooseGame.selectAll("option")
+				.data(games)
+				.enter()
+				.append("option");
+
+			options.text(function(d) {return d.Title; })
+					.attr("value", function(d) {return d.Sales})
+		}
+
+		function listGames(title, sales, platform, date, developer, publisher)
+		{
+			d3.select("#gametitle").selectAll('*').remove()
+			d3.select("#gamesales").selectAll('*').remove()
+			d3.select("#gameplatform").selectAll('*').remove()
+			d3.select("#gamedate").selectAll('*').remove()
+			d3.select("#gamedeveloper").selectAll('*').remove()
+			d3.select("#gamepublisher").selectAll('*').remove()
+			
+			var t = d3.select('#gametitle');
+			t.append('text')
+				.html(title)
+
+			var s = d3.select('#gamesales');
+			s.append('text')
+				.html(sales + " Copies");
+
+			var p = d3.select('#gameplatform');
+			p.append('text')
+				.html(platform);
+
+			var d = d3.select('#gamedate');
+			d.append('text')
+				.html(date);
+
+			var dev = d3.select('#gamedeveloper');
+			dev.append('text')
+				.html(developer);
+
+			var p = d3.select('#gamepublisher');
+			p.append('text')
+				.html(publisher);
+		}
+
+        //Draw the scatterplot. 
+        function drawScatterplot()
+        {
+            //Set chart width and height. 
+            var CHART_WIDTH = 400;
+            var CHART_HEIGHT = 300;
+
+            //Set the scales to linear. 
+            var xScale = d3.scale.linear();
+            var yScale = d3.scale.linear();
+
+            //Set the minimum and maximum of the unit numbers (the numbers the data gives each individual game).
+            var maxUnit = d3.max(games, function(d) {return +d.id });
+            var minUnit = d3.min(games, function(d) {return +d.id });
+
+            //Set the minimum and maximum of the total sales. 
+            var maxSales = d3.max(games, function(d) { return fixNum(d.Sales) });
+			var minSales = d3.min(games, function(d) { return fixNum(d.Sales) });
+
+            //Set the domain and range of the x side of the graph. 
+		    xScale
+			    .domain([minUnit, maxUnit])
+			    .range([0, CHART_WIDTH]);
+			
+		    //Set the domain and range of the y side of the graph. 
+		    yScale
+			    .domain([minSales, maxSales])
+			    .range([CHART_HEIGHT, 0]);
+
+            //Select the group with the id of "scatterplot". 
+            var g = d3.select('svg').select('#scatterplot');
+
+            //Create the x axis. 
+		    var xAxis = d3.svg.axis()
+    		    .scale(xScale)
+    		    .orient('bottom').ticks(0)
+			    //This determines the ticks at the x side of the graph, but it doesn't include commas so we're leaving it out.
+			    //.tickFormat(function(d) { return "" + d; })
+
+		    //Create the y axis. 
+    	    var yAxis = d3.svg.axis()
+    		    .scale(yScale)
+    		    .orient('left').ticks(10);
+
+		    //Append the text for the y axis. 
+            g.append('text')
+                .attr('y', 0)
+                .attr('x', 0)
+                .attr('transform', 'translate(-75, 150), rotate(-90)')
+                .html('Total Sales');
+
+		    //Append the text for the x axis. 
+            g.append('text')
+                .attr('y', CHART_HEIGHT + 30)
+                .attr('x', CHART_WIDTH/2 - 50)
+                .html('Game');
+
+		    //Call the x axis and append it to the page. 
+    	    g.append('g')
+    		    .attr('class', 'axis')
+    		    .attr('transform', 'translate(0,' + CHART_HEIGHT + ')')
+    		    .call(xAxis);
+
+		    //Call the y axis and append it to the page. 
+    	    g.append('g')
+    		    .attr('class', 'axis')
+    		    .call(yAxis);
+
+    	    //Create circles for the data points. 
+    	    var circles = g.selectAll('circle')
+    		    .data(games)
+    		    .enter()
+    		    .append('circle')
+
+		    //Style the circles. 
+    	    circles
+    		    .style('fill', function(d) { 
+					if(d.Publisher == "Nintendo" && "Nintendo / The Pokémon Company" ) { 
+						return 'red' 
+						} 
+						else if (d.Publisher == "Activision") {
+							return 'orange'
+						} 
+						else if (d.Publisher == "Sony Computer Entertainment") {
+							return 'blue'
+						}
+						else if (d.Publisher == "Xbox Game Studios"){
+							return 'green'
+						}
+						else
+					{return 'purple'}})
+    		    .attr('r', 4)
+    		    .attr('cx', function(d) { return xScale (+d.id)})
+				.attr('cy', function(d) { return yScale(fixNum(d.Sales)) });
+
+		    //Make the circles red when you mouseover them. 
+    	    circles
+    		    .on('mouseover', function(d) {
+    			    d3.select(this)
+						.style('r', 8)
+            
+    			    console.log('game dev: ' + fixNum(d.Sales));
+    		    })
+
+		    //Return the circles to blue when you mouse leaves the circle. 
+            circles
+    		    .on('mouseout', function(d) {
+    			    d3.select(this)
+						.style('r', 4)
+                        .style('fill', function(d) { 
+					if(d.Publisher == "Nintendo" && "Nintendo / The Pokémon Company" ) { 
+						return 'red' 
+						} 
+						else if (d.Publisher == "Activision") {
+							return 'orange'
+						} 
+						else if (d.Publisher == "Sony Computer Entertainment") {
+							return 'blue'
+						}
+						else if (d.Publisher == "Xbox Game Studios"){
+							return 'green'
+						}
+						else
+					{return 'purple'}})
+    		    })
+
+			circles
+            	.on('click', function(d) {
+					d3.select(this)
+						.style('fill', 'white')
+                	listGames(d.Title, d.Sales, d.Platform, d.Initialreleasedate, d.Developer, d.Publisher);
+            	})
+        }
+
+        //Draw the scatter plot. 
+	    d3.csv('dataminer.csv', function(data) {
+		    games = data;
+		    drawScatterplot();
+	    });
+
+
+    </script>
+
+</body>
+</html>
